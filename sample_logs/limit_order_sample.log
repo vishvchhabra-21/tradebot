@@ -1,0 +1,33 @@
+==================== CONSOLE OUTPUT (exit code 0) ====================
+======================================================================
+ TradeBot — Binance Futures Testnet
+======================================================================
+ [1/3] ORDER REQUEST SUMMARY
+----------------------------------------------------------------------
+   Symbol       : BTCUSDT
+   Side         : BUY
+   Type         : LIMIT
+   Quantity     : 0.01
+   Price        : 30000
+   Base URL     : https://testnet.binancefuture.com
+   ClientOrderId: tb_7e226f88
+----------------------------------------------------------------------
+ [2/3] SENDING ORDER...
+----------------------------------------------------------------------
+ [3/3] ORDER RESPONSE
+----------------------------------------------------------------------
+   orderId      : 18321719213
+   status       : NEW
+   executedQty  : 0.0000
+   avgPrice     : N/A
+----------------------------------------------------------------------
+ ✅ SUCCESS: Order placed (resting, not yet filled).
+======================================================================
+
+==================== logs/trading_bot.log EXCERPT ====================
+2026-07-02 02:17:35 | DEBUG | bot.client | event=server_time_offset offset_ms=31535
+2026-07-02 02:17:35 | INFO | bot.client | event=request client_order_id=tb_7e226f88 method=POST endpoint=/fapi/v1/order params={'symbol': 'BTCUSDT', 'side': 'BUY', 'type': 'LIMIT', 'timeInForce': 'GTC', 'quantity': '0.01', 'price': '30000', 'newClientOrderId': 'tb_7e226f88', 'timestamp': 1782938887360, 'recvWindow': 5000, 'signature': '***'}
+2026-07-02 02:17:36 | INFO | bot.client | event=response client_order_id=tb_7e226f88 endpoint=/fapi/v1/order status=200 body={'orderId': 18321719213, 'symbol': 'BTCUSDT', 'status': 'NEW', 'clientOrderId': 'tb_7e226f88', 'price': '30000.00', 'origQty': '0.0100', 'executedQty': '0.0000', 'cumQty': '0.0000', 'timeInForce': 'GTC', 'type': 'LIMIT', 'reduceOnly': False, 'closePosition': False, 'side': 'BUY', 'positionSide': 'BOTH', 'stopPrice': '0.00', 'workingType': 'CONTRACT_PRICE', 'priceProtect': False, 'origType': 'LIMIT', 'priceMatch': 'NONE', 'selfTradePreventionMode': 'EXPIRE_MAKER', 'goodTillDate': 0, 'updateTime': 1782938887998}
+
+==================== logs/orders_history.jsonl ====================
+{"timestamp": "2026-07-01T20:47:36.465Z", "clientOrderId": "tb_7e226f88", "symbol": "BTCUSDT", "side": "BUY", "type": "LIMIT", "quantity": "0.0100", "price": "30000", "orderId": 18321719213, "status": "NEW", "executedQty": "0.0000", "avgPrice": null, "success": true}

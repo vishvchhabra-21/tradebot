@@ -86,21 +86,31 @@ class BinanceFuturesClient:
             logger.warning("event=server_time_fetch_failed falling back to offset=0")
             return 0
 
+    @staticmethod
+    def _query_string(params: dict) -> str:
+        """Deterministic, sorted, URL-encoded query string — the exact bytes we sign."""
+        return urlencode(sorted(params.items()))
+
     def _sign(self, params: dict) -> str:
-        """HMAC-SHA256 signature over a sorted, URL-encoded query string (deterministic)."""
-        query_string = urlencode(sorted(params.items()))
+        """HMAC-SHA256 signature over the sorted, URL-encoded query string (deterministic)."""
         return hmac.new(
-            self.api_secret.encode(), query_string.encode(), hashlib.sha256
+            self.api_secret.encode(), self._query_string(params).encode(), hashlib.sha256
         ).hexdigest()
 
     def _signed_request(self, method: str, path: str, params: dict, client_order_id: str) -> dict:
-        """Sign and send one request, applying retry/backoff and error->exception mapping."""
+        """Sign and send one request, applying retry/backoff and error->exception mapping.
+
+        The signed query string is appended to the URL verbatim (signature last), rather
+        than passed as a dict to ``requests`` — this guarantees the bytes Binance verifies
+        are byte-for-byte the bytes we signed, avoiding -1022 from any re-encoding/reorder.
+        """
         params = dict(params)
         params["timestamp"] = int(time.time() * 1000) + self._time_offset_ms
         params["recvWindow"] = self.recv_window
-        params["signature"] = self._sign(params)
+        query_string = self._query_string(params)
+        signature = self._sign(params)  # signs the identical sorted string
         headers = {"X-MBX-APIKEY": self.api_key}
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_url}{path}?{query_string}&signature={signature}"
 
         logger.info(
             "event=request client_order_id=%s method=%s endpoint=%s params=%s",
@@ -114,7 +124,7 @@ class BinanceFuturesClient:
         while True:
             try:
                 resp = requests.request(
-                    method, url, params=params, headers=headers, timeout=_REQUEST_TIMEOUT_SECONDS
+                    method, url, headers=headers, timeout=_REQUEST_TIMEOUT_SECONDS
                 )
                 break
             except (requests.ConnectionError, requests.Timeout) as e:

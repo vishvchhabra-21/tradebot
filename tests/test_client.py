@@ -5,6 +5,7 @@ real credential ever appears in tests.
 """
 
 from unittest.mock import MagicMock, patch
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -21,6 +22,12 @@ ENV = {"BINANCE_API_KEY": "k", "BINANCE_API_SECRET": "s"}
 
 def _mock_time(mock_get):
     mock_get.return_value = MagicMock(json=lambda: {"serverTime": 0})
+
+
+def _sent_params(mock_request) -> dict:
+    """Parse the query string off the URL the client actually sent."""
+    url = mock_request.call_args.args[1]
+    return {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
 
 
 @patch.dict("os.environ", {}, clear=True)
@@ -63,9 +70,11 @@ def test_place_market_order_success(mock_request, mock_get):
     assert result["orderId"] == 1
     assert result["status"] == "FILLED"
     # newClientOrderId must be forwarded for traceability (Critical Detail 5).
-    sent_params = mock_request.call_args.kwargs["params"]
+    sent_params = _sent_params(mock_request)
     assert sent_params["newClientOrderId"] == "tb_test"
     assert sent_params["type"] == "MARKET"
+    # signature must be present on the wire (and last).
+    assert "signature" in sent_params
 
 
 @patch.dict("os.environ", ENV)
@@ -79,7 +88,7 @@ def test_place_limit_order_sends_price_and_tif(mock_request, mock_get):
     )
     client = BinanceFuturesClient()
     client.place_limit_order("ETHUSDT", "SELL", "0.5", "4200", "tb_lim")
-    sent = mock_request.call_args.kwargs["params"]
+    sent = _sent_params(mock_request)
     assert sent["type"] == "LIMIT"
     assert sent["price"] == "4200"
     assert sent["timeInForce"] == "GTC"
@@ -156,5 +165,5 @@ def test_server_time_offset_applied_to_timestamp(mock_request, mock_get):
     client = BinanceFuturesClient()
     assert client._time_offset_ms >= 9_000  # ~10s ahead (allow scheduling jitter)
     client.place_market_order("BTCUSDT", "BUY", "0.01", "tb_test")
-    sent_ts = mock_request.call_args.kwargs["params"]["timestamp"]
+    sent_ts = int(_sent_params(mock_request)["timestamp"])
     assert sent_ts > int(time.time() * 1000)
