@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+logs/trading_bot.log
+logs/orders_history.jsonl
+.venv/
+
+# Keep all Markdown docs out of the repo except the required README deliverable.
+*.md
+!README.md
